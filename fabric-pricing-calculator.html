@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>织布核价工具</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0f0e0c;
+    --card: #1a1917;
+    --card2: #211f1b;
+    --accent: #c8922a;
+    --accent2: #e8b84b;
+    --text: #e8dfc8;
+    --muted: #7a7060;
+    --border: #2e2b25;
+    --green: #5a9a6a;
+    --red: #c0504a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(200,146,42,0.03) 39px, rgba(200,146,42,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(200,146,42,0.03) 39px, rgba(200,146,42,0.03) 40px);
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  header::before {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    margin: 0 auto 16px;
+  }
+  h1 {
+    font-size: 1.9rem;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: var(--accent2);
+    text-shadow: 0 0 40px rgba(200,146,42,0.3);
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    margin-top: 6px;
+  }
+
+  /* tab */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Noto Serif SC', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text); background: var(--card2); }
+  .tab.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* sections */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 12px 20px;
+    background: var(--card2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .section-num.green { background: var(--green); }
+  .section-num.blue { background: #4a7ab0; }
+  .section-title { font-size: 0.8rem; letter-spacing: 0.2em; color: var(--accent2); font-weight: 700; }
+  .section-body { padding: 20px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; }
+  .field input, .field select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(200,146,42,0.15);
+  }
+  .field input::placeholder { color: var(--muted); opacity: 0.4; }
+  .field select { cursor: pointer; }
+  .field select option { background: var(--card); }
+
+  .formula-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 12px 16px;
+    margin-top: 14px;
+  }
+  .formula-box .ftitle { font-size: 0.68rem; color: var(--accent); letter-spacing: 0.2em; margin-bottom: 7px; font-family: 'JetBrains Mono', monospace; }
+  .formula-box .ftext { font-size: 0.8rem; color: var(--muted); line-height: 1.9; font-family: 'JetBrains Mono', monospace; }
+  .formula-box .ftext em { color: var(--accent2); font-style: normal; }
+
+  .btn-row { display: flex; gap: 10px; margin-bottom: 18px; }
+  .btn {
+    flex: 1; padding: 12px 20px; border: none; border-radius: 3px;
+    font-family: 'Noto Serif SC', serif; font-size: 0.85rem;
+    letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 4px 18px rgba(200,146,42,0.3); }
+  .btn-secondary { background: var(--card2); color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent2); }
+  .btn-sm { flex: none; padding: 8px 16px; font-size: 0.75rem; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { filter: brightness(1.2); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { filter: brightness(1.2); }
+
+  /* results */
+  #result { display: none; }
+  #result.show { display: block; animation: fadeIn 0.4s ease; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .result-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 18px; text-align: center; position: relative; overflow: hidden;
+  }
+  .result-card::before { content: ''; position: absolute; top:0; left:0; right:0; height: 2px; background: var(--accent); }
+  .result-card.highlight::before { background: var(--accent2); }
+  .result-label { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 7px; }
+  .result-value { font-size: 1.5rem; font-weight: 700; color: var(--accent2); font-family: 'JetBrains Mono', monospace; }
+  .result-unit { font-size: 0.65rem; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .result-detail { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row .label { color: var(--muted); letter-spacing: 0.1em; }
+  .detail-row .value { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .detail-row .value.accent { color: var(--accent2); }
+  .detail-row.total-row { background: var(--card2); border-top: 2px solid var(--accent); }
+  .detail-row.total-row .label { color: var(--accent2); font-weight: 700; }
+  .detail-row.total-row .value { color: var(--accent2); font-size: 1.05rem; font-weight: 700; }
+
+  /* verify */
+  .verify-section { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 14px 16px; margin-top: 14px; }
+  .verify-title { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 10px; }
+  .verify-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+  .verify-row:last-child { border-bottom: none; }
+  .verify-row .label { color: var(--muted); }
+  .verify-row .value { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .verify-row .value.ok { color: var(--green); }
+  .verify-row .value.warn { color: #e8a030; }
+
+  /* quote list */
+  .quote-list { display: flex; flex-direction: column; gap: 8px; }
+  .quote-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .quote-card:hover { border-color: var(--accent); }
+  .quote-card.active-card { border-color: var(--accent2); background: rgba(200,146,42,0.05); }
+  .quote-info { flex: 1; }
+  .quote-name { font-size: 0.88rem; color: var(--accent2); font-weight: 700; letter-spacing: 0.1em; }
+  .quote-meta { font-size: 0.7rem; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .quote-prices { display: flex; gap: 16px; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; }
+  .quote-prices span { color: var(--text); }
+  .quote-prices .pp-label { color: var(--muted); font-size: 0.65rem; }
+  .quote-actions { display: flex; gap: 6px; }
+
+  /* add quote */
+  .add-quote-form { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 16px; margin-top: 14px; }
+  .add-quote-form .form-title { font-size: 0.72rem; color: var(--accent); letter-spacing: 0.2em; margin-bottom: 12px; }
+  .add-quote-form .grid { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  /* empty */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.82rem; }
+  .empty-state .emoji { font-size: 2rem; margin-bottom: 10px; display: block; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 10px 24px; border-radius: 20px;
+    font-size: 0.82rem; letter-spacing: 0.1em;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+
+  /* used quote badge */
+  .used-quote-badge {
+    display: inline-block; background: rgba(90,154,106,0.15); border: 1px solid var(--green);
+    color: var(--green); font-size: 0.65rem; padding: 2px 8px; border-radius: 10px;
+    letter-spacing: 0.1em; margin-left: 8px;
+  }
+
+  /* 报价来源选择 */
+  .quote-source-bar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .quote-source-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; white-space: nowrap; }
+  .quote-select { flex: 1; min-width: 120px; }
+  .quote-select select { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; padding: 8px 10px; width: 100%; outline: none; }
+  .quote-select select:focus { border-color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .grid, .grid.triple { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>织布核价工具</h1>
+    <div class="subtitle">FABRIC COSTING CALCULATOR · 供应商报价版</div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('calc')">核 价</button>
+    <button class="tab" onclick="switchTab('quotes')">供应商报价</button>
+  </div>
+
+  <!-- ========== 核价面板 ========== -->
+  <div id="panel-calc" class="panel active">
+
+    <!-- 报价来源 -->
+    <div class="quote-source-bar">
+      <span class="quote-source-label">📋 当前报价</span>
+      <div class="quote-select" style="flex:1">
+        <select id="activeQuote" onchange="loadQuoteToCalc()">
+          <option value="">— 手动输入纱价 —</option>
+        </select>
+      </div>
+      <span id="activeQuoteBadge" class="used-quote-badge" style="display:none"></span>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div class="section-title">面料参数</div>
+      </div>
+      <div class="section-body">
+        <div class="grid">
+          <div class="field">
+            <label>面料编号</label>
+            <input type="text" id="fabricCode" placeholder="如：CFJ6060 / 9088">
+          </div>
+          <div class="field">
+            <label>门幅（英寸）</label>
+            <input type="number" id="widthInch" placeholder="64" value="64" step="0.1">
+          </div>
+          <div class="field">
+            <label>经密（根/英寸）</label>
+            <input type="number" id="warpDensity" placeholder="90" step="0.1">
+          </div>
+          <div class="field">
+            <label>纬密（根/英寸）</label>
+            <input type="number" id="weftDensity" placeholder="88" step="0.1">
+          </div>
+          <div class="field">
+            <label>经纱支数（Ne）</label>
+            <input type="number" id="warpCount" placeholder="60" step="0.1">
+          </div>
+          <div class="field">
+            <label>纬纱支数（Ne）</label>
+            <input type="number" id="weftCount" placeholder="60" step="0.1">
+          </div>
+        </div>
+        <div class="formula-box">
+          <div class="ftitle">克重公式</div>
+          <div class="ftext">克重 = <em>(经密 / 经纱支)</em> + <em>(纬密 / 纬纱支)</em> = 24.5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div class="section-title">纱价 & 工费</div>
+      </div>
+      <div class="section-body">
+        <div class="grid">
+          <div class="field">
+            <label>经纱价格（元/公斤）</label>
+            <input type="number" id="warpPrice" placeholder="如：38.0" step="0.01">
+          </div>
+          <div class="field">
+            <label>纬纱价格（元/公斤）</label>
+            <input type="number" id="weftPrice" placeholder="如：38.0" step="0.01">
+          </div>
+          <div class="field">
+            <label>工费单价（分钱/纬纱）</label>
+            <input type="number" id="laborRate" placeholder="默认 0.027" value="0.027" step="0.001">
+          </div>
+          <div class="field">
+            <label>备注</label>
+            <input type="text" id="priceNote" placeholder="如：XX供应商2026年4月报价">
+          </div>
+        </div>
+        <div class="formula-box">
+          <div class="ftitle">百米用纱量</div>
+          <div class="ftext">经纱 = <em>经密/经纱支</em> × 门幅(米) × 0.065 &nbsp;|&nbsp; 纬纱同上</div>
+        </div>
+        <div class="formula-box" style="margin-top:8px;">
+          <div class="ftitle">总价公式</div>
+          <div class="ftext">经纱费 + 纬纱费 + 工费(纬密×0.027÷100)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calculate()">核 价</button>
+      <button class="btn btn-secondary" onclick="saveCurrentAsQuote()">💾 保存此报价</button>
+      <button class="btn btn-secondary btn-sm" onclick="resetCalc()">清 空</button>
+    </div>
+
+    <!-- 结果 -->
+    <div id="result">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-num green">✓</div>
+          <div class="section-title">计算结果</div>
+        </div>
+        <div class="section-body">
+          <div class="result-grid">
+            <div class="result-card">
+              <div class="result-label">预估克重</div>
+              <div class="result-value" id="resGram">—</div>
+              <div class="result-unit">g/m²</div>
+            </div>
+            <div class="result-card highlight">
+              <div class="result-label">百米总用纱量</div>
+              <div class="result-value" id="resTotalYarn">—</div>
+              <div class="result-unit">kg / 100米</div>
+            </div>
+            <div class="result-card highlight">
+              <div class="result-label">总核价</div>
+              <div class="result-value" id="resTotalPrice">—</div>
+              <div class="result-unit">元 / 100米</div>
+            </div>
+          </div>
+
+          <div class="result-detail">
+            <div class="detail-row"><span class="label">面料规格</span><span class="value accent" id="resSpec">—</span></div>
+            <div class="detail-row"><span class="label">克重公式</span><span class="value" id="resGramCheck">—</span></div>
+            <div class="detail-row"><span class="label">百米经纱用量</span><span class="value" id="resWarpYarn">—</span></div>
+            <div class="detail-row"><span class="label">百米纬纱用量</span><span class="value" id="resWeftYarn">—</span></div>
+            <div class="detail-row"><span class="label">经纱纱费</span><span class="value" id="resWarpCost">—</span></div>
+            <div class="detail-row"><span class="label">纬纱纱费</span><span class="value" id="resWeftCost">—</span></div>
+            <div class="detail-row"><span class="label">工费</span><span class="value" id="resLabor">—</span></div>
+            <div class="detail-row total-row"><span class="label">合计单价</span><span class="value" id="resTotalPrice2">—</span></div>
+          </div>
+
+          <div class="verify-section">
+            <div class="verify-title">用纱量一致性校验（克重反推 vs 公式计算）</div>
+            <div class="verify-row"><span class="label">克重 → 百米重量</span><span class="value" id="resM2To100m">—</span></div>
+            <div class="verify-row"><span class="label">公式百米用纱量</span><span class="value" id="resYarn100m">—</span></div>
+            <div class="verify-row"><span class="label">偏差</span><span class="value" id="resCheck">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 供应商报价面板 ========== -->
+  <div id="panel-quotes" class="panel">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num blue">📋</div>
+        <div class="section-title">已存档的供应商报价</div>
+      </div>
+      <div class="section-body">
+        <div id="quoteList" class="quote-list">
+          <div class="empty-state">
+            <span class="emoji">📭</span>
+            暂无存档报价<br>在核价页填好纱价后，点击「保存此报价」即可存档
+          </div>
+        </div>
+
+        <!-- 新增报价表单 -->
+        <div class="add-quote-form">
+          <div class="form-title">+ 手动新增报价记录</div>
+          <div class="grid">
+            <div class="field">
+              <label>供应商名称</label>
+              <input type="text" id="newSupplier" placeholder="如：华润纱业">
+            </div>
+            <div class="field">
+              <label>经纱价格（元/公斤）</label>
+              <input type="number" id="newWarpPrice" placeholder="38.0" step="0.01">
+            </div>
+            <div class="field">
+              <label>纬纱价格（元/公斤）</label>
+              <input type="number" id="newWeftPrice" placeholder="38.0" step="0.01">
+            </div>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <button class="btn btn-green" onclick="addNewQuote()" style="flex:1">添加报价</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ─── 数据存储 ───────────────────────────────────
+  const QUOTES_KEY = 'fabric_quotes_v1';
+
+  function getQuotes() {
+    try { return JSON.parse(localStorage.getItem(QUOTES_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveQuotes(quotes) {
+    localStorage.setItem(QUOTES_KEY, JSON.stringify(quotes));
+  }
+
+  // ─── Tab 切换 ───────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    if (name === 'calc') document.querySelector('.tab').classList.add('active');
+    else document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'quotes') renderQuoteList();
+  }
+
+  // ─── 报价下拉 & 加载 ─────────────────────────────
+  function refreshQuoteDropdown() {
+    const sel = document.getElementById('activeQuote');
+    const quotes = getQuotes();
+    sel.innerHTML = '<option value="">— 手动输入纱价 —</option>';
+    quotes.forEach((q, i) => {
+      const d = q.date ? `（${q.date}）` : '';
+      sel.innerHTML += `<option value="${i}">${q.supplier}${d}  经:¥${q.warp}/纬:¥${q.weft}</option>`;
+    });
+  }
+
+  function loadQuoteToCalc() {
+    const idx = document.getElementById('activeQuote').value;
+    const badge = document.getElementById('activeQuoteBadge');
+    if (idx === '') {
+      badge.style.display = 'none';
+      return;
+    }
+    const q = getQuotes()[idx];
+    document.getElementById('warpPrice').value = q.warp;
+    document.getElementById('weftPrice').value = q.weft;
+    document.getElementById('priceNote').value = q.supplier + (q.date ? ' ' + q.date : '');
+    badge.textContent = '📋 ' + q.supplier;
+    badge.style.display = 'inline-block';
+    toast('已加载：' + q.supplier + ' 报价');
+  }
+
+  // ─── 核价主逻辑 ───────────────────────────────────
+  function INCH_TO_METER(i) { return i * 0.0254; }
+
+  function calculate() {
+    const widthIn    = parseFloat(document.getElementById('widthInch').value) || 64;
+    const warpD      = parseFloat(document.getElementById('warpDensity').value);
+    const weftD      = parseFloat(document.getElementById('weftDensity').value);
+    const warpC      = parseFloat(document.getElementById('warpCount').value);
+    const weftC      = parseFloat(document.getElementById('weftCount').value);
+    const warpPx     = parseFloat(document.getElementById('warpPrice').value);
+    const weftPx     = parseFloat(document.getElementById('weftPrice').value);
+    const laborR     = parseFloat(document.getElementById('laborRate').value) || 0.027;
+    const code       = document.getElementById('fabricCode').value.trim() || '未命名';
+
+    if (!warpD || !weftD || !warpC || !weftC) {
+      alert('请填写完整的密度和支数');
+      return;
+    }
+
+    const wM = INCH_TO_METER(widthIn);
+
+    // 克重
+    const gram = (warpD / warpC) + (weftD / weftC);
+
+    // 百米用纱量
+    const warpY = (warpD / warpC) * wM * 0.065;
+    const weftY = (weftD / weftC) * wM * 0.065;
+    const totalY = warpY + weftY;
+
+    // 费用
+    const warpCost = warpPx > 0 ? warpY * warpPx : null;
+    const weftCost = weftPx > 0 ? weftY * weftPx : null;
+    const laborY   = (weftD * laborR) / 100; // 分→元
+
+    let total = 0;
+    if (warpCost !== null) total += warpCost;
+    if (weftCost !== null) total += weftCost;
+    total += laborY;
+
+    // 验算
+    const gramToKg = gram * wM * 100 / 1000;
+    const diff = Math.abs(gramToKg - totalY);
+    const pct  = gramToKg > 0 ? ((diff / gramToKg) * 100).toFixed(1) : '0.0';
+
+    // 渲染结果
+    document.getElementById('resGram').textContent        = gram.toFixed(1);
+    document.getElementById('resTotalYarn').textContent   = totalY.toFixed(3);
+    document.getElementById('resTotalPrice').textContent  = total.toFixed(3);
+    document.getElementById('resSpec').textContent =
+      `${code}  ${warpD}/${warpC} × ${weftD}/${weftC}  ${widthIn}″`;
+    document.getElementById('resGramCheck').textContent =
+      `${warpD}/${warpC} + ${weftD}/${weftC} = ${(warpD/warpC).toFixed(2)} + ${(weftD/weftC).toFixed(2)} = ${gram.toFixed(2)} g/m²`;
+    document.getElementById('resWarpYarn').textContent = warpY.toFixed(4) + ' kg';
+    document.getElementById('resWeftYarn').textContent = weftY.toFixed(4) + ' kg';
+    document.getElementById('resWarpCost').textContent = warpCost !== null ? '¥ ' + warpCost.toFixed(3) : '— 未填经纱价';
+    document.getElementById('resWeftCost').textContent = weftCost !== null ? '¥ ' + weftCost.toFixed(3) : '— 未填纬纱价';
+    document.getElementById('resLabor').textContent  = `${weftD} × ${laborR} = ${(weftD*laborR).toFixed(2)}分 = ¥${laborY.toFixed(3)}`;
+    document.getElementById('resTotalPrice2').textContent = '¥ ' + total.toFixed(3);
+    document.getElementById('resM2To100m').textContent = `${gram.toFixed(1)}g/m² × ${wM.toFixed(4)}m × 100m ÷ 1000 = ${gramToKg.toFixed(3)} kg`;
+    document.getElementById('resYarn100m').textContent  = totalY.toFixed(4) + ' kg';
+
+    const chkEl = document.getElementById('resCheck');
+    chkEl.textContent = pct < 5
+      ? `偏差 ${diff.toFixed(4)} kg (${pct}%) ✓ 一致性良好`
+      : `偏差 ${diff.toFixed(4)} kg (${pct}%) — 建议核对参数`;
+    chkEl.className = pct < 5 ? 'value ok' : 'value warn';
+
+    document.getElementById('result').classList.add('show');
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ─── 保存当前报价 ─────────────────────────────────
+  function saveCurrentAsQuote() {
+    const wp = document.getElementById('warpPrice').value;
+    const we = document.getElementById('weftPrice').value;
+    if (!wp && !we) { alert('请先填入经纱或纬纱价格'); return; }
+    const note = document.getElementById('priceNote').value.trim() || '未命名报价';
+    const q = { supplier: note, warp: parseFloat(wp)||0, weft: parseFloat(we)||0, date: todayStr() };
+    const quotes = getQuotes();
+    quotes.unshift(q);
+    saveQuotes(quotes);
+    refreshQuoteDropdown();
+    toast('报价已保存：' + note);
+  }
+
+  // ─── 手动新增报价 ─────────────────────────────────
+  function addNewQuote() {
+    const supplier = document.getElementById('newSupplier').value.trim();
+    const wp = document.getElementById('newWarpPrice').value;
+    const we = document.getElementById('newWeftPrice').value;
+    if (!supplier) { alert('请填写供应商名称'); return; }
+    if (!wp && !we) { alert('请填写至少一个纱价'); return; }
+    const q = { supplier, warp: parseFloat(wp)||0, weft: parseFloat(we)||0, date: todayStr() };
+    const quotes = getQuotes();
+    quotes.unshift(q);
+    saveQuotes(quotes);
+    document.getElementById('newSupplier').value = '';
+    document.getElementById('newWarpPrice').value = '';
+    document.getElementById('newWeftPrice').value = '';
+    renderQuoteList();
+    refreshQuoteDropdown();
+    toast('报价已添加：' + supplier);
+  }
+
+  // ─── 渲染报价列表 ─────────────────────────────────
+  function renderQuoteList() {
+    const quotes = getQuotes();
+    const el = document.getElementById('quoteList');
+    if (quotes.length === 0) {
+      el.innerHTML = `<div class="empty-state"><span class="emoji">📭</span>暂无存档报价<br>在核价页填好纱价后，点击「保存此报价」即可存档</div>`;
+      return;
+    }
+    el.innerHTML = quotes.map((q, i) => `
+      <div class="quote-card" id="qc${i}">
+        <div class="quote-info">
+          <div class="quote-name">${q.supplier}</div>
+          <div class="quote-meta">${q.date || '无日期'}</div>
+        </div>
+        <div class="quote-prices">
+          <div><div class="pp-label">经纱</div><div>¥${q.warp}/kg</div></div>
+          <div><div class="pp-label">纬纱</div><div>¥${q.weft}/kg</div></div>
+        </div>
+        <div class="quote-actions">
+          <button class="btn btn-green btn-sm" onclick="useQuote(${i})">使用</button>
+          <button class="btn btn-red btn-sm" onclick="delQuote(${i})">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function useQuote(idx) {
+    switchTab('calc');
+    document.getElementById('activeQuote').value = String(idx);
+    loadQuoteToCalc();
+  }
+
+  function delQuote(idx) {
+    if (!confirm('确认删除该报价？')) return;
+    const qs = getQuotes();
+    qs.splice(idx, 1);
+    saveQuotes(qs);
+    renderQuoteList();
+    refreshQuoteDropdown();
+    toast('已删除');
+  }
+
+  // ─── 重置 ─────────────────────────────────────────
+  function resetCalc() {
+    document.getElementById('fabricCode').value = '';
+    document.getElementById('widthInch').value = '64';
+    document.getElementById('warpDensity').value = '';
+    document.getElementById('weftDensity').value = '';
+    document.getElementById('warpCount').value = '';
+    document.getElementById('weftCount').value = '';
+    document.getElementById('warpPrice').value = '';
+    document.getElementById('weftPrice').value = '';
+    document.getElementById('laborRate').value = '0.027';
+    document.getElementById('priceNote').value = '';
+    document.getElementById('activeQuote').value = '';
+    document.getElementById('activeQuoteBadge').style.display = 'none';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  // ─── 工具 ─────────────────────────────────────────
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ─── 初始化 ───────────────────────────────────────
+  refreshQuoteDropdown();
+</script>
+</body>
+</html>
